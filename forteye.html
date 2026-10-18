@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>FORTEYE // Анализ кассовой дисциплины</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Russo+One&family=Press+Start+2P&family=Inter:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--pink:#B31554;--cyan:#62D3FC;--dim:rgba(98,211,252,.55);--line:rgba(98,211,252,.3);--panel:rgba(0,6,10,.78);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--cyan);font:13px/1.55 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;min-height:100vh}
+#grid{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:18px 18px 40px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+h1{font:400 26px "Russo One",Impact,sans-serif;letter-spacing:.12em;margin:0;color:#fff;text-shadow:0 0 14px var(--cyan)}
+.sub{color:var(--dim);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border:1px solid var(--line);border-radius:999px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;background:rgba(98,211,252,.06)}
+.badge.p{border-color:var(--pink);color:#ff7aa8;background:rgba(179,21,84,.14)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--pink);box-shadow:0 0 8px var(--pink);animation:bl 1.1s infinite}
+@keyframes bl{50%{opacity:.15}}
+main{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-top:18px;align-items:start}
+@media(max-width:920px){main{grid-template-columns:1fr}}
+.panel{position:relative;background:var(--panel);border:1px solid var(--line);padding:16px;backdrop-filter:blur(3px)}
+.ph{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.stage{position:relative;aspect-ratio:16/9;background:#02070a;border:1px solid var(--line);overflow:hidden}
+.stage video{position:static;inset:auto;width:100%;height:auto;max-height:70vh;object-fit:contain;background:#000;outline:1px solid var(--line)}
+.nosig{position:relative;inset:auto;aspect-ratio:16/9;background:#02070a;border:1px solid var(--line);color:rgba(98,211,252,.78);display:grid;place-items:center;text-align:center}
+.nosig b{display:block;font:400 22px "Russo One",sans-serif;color:var(--pink);letter-spacing:.25em;margin-bottom:6px}
+.tl-bar{position:relative;height:14px;margin-top:10px;border:1px solid var(--line);background:rgba(98,211,252,.05)}
+.mk{position:absolute;top:-4px;width:3px;height:20px;background:var(--pink);box-shadow:0 0 8px var(--pink);cursor:pointer;transform:translateX(-1px)}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{font:700 12px "JetBrains Mono",monospace;letter-spacing:.16em;text-transform:uppercase;padding:12px 18px;cursor:pointer;border:1px solid var(--cyan);background:rgba(98,211,252,.08);color:var(--cyan);transition:.2s;user-select:none}
+.btn:hover:not(:disabled){background:var(--cyan);color:#000;box-shadow:0 0 18px var(--cyan)}
+.btn.p{border-color:var(--pink);background:rgba(179,21,84,.18);color:#ff7aa8}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+#file{display:none}
+.prog{height:6px;margin-top:14px;border:1px solid var(--line)}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pink),var(--cyan));box-shadow:0 0 10px var(--cyan);transition:width .25s}
+#log{margin-top:12px;min-height:84px;max-height:120px;overflow:auto;font-size:11.5px;color:var(--dim)}
+#log div:before{content:"> ";color:var(--pink)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{border:1px solid var(--line);padding:8px 10px;background:rgba(98,211,252,.05)}
+.stat small{display:block;color:var(--dim);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase}
+.stat b{font:400 20px "Russo One",sans-serif;color:#fff}
+.stat b.r{color:var(--pink);text-shadow:0 0 10px var(--pink)}
+#list{display:flex;flex-direction:column;gap:14px}
+.empty{color:var(--dim);text-align:center;padding:36px 8px;letter-spacing:.14em;font-size:12px}
+.v{border:1px solid var(--pink);background:rgba(179,21,84,.07);padding:10px;cursor:pointer}
+.shot{position:relative;border:1px solid var(--cyan);background:#02070a;aspect-ratio:16/9;overflow:hidden}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+.shot img{width:100%;height:100%;display:block;object-fit:cover}
+.verdict{padding:10px 12px;margin-bottom:12px;border:1px solid var(--line);font:400 13px "Russo One",sans-serif;letter-spacing:.1em;color:var(--dim);min-height:42px}
+.verdict.ok{border-color:var(--cyan);color:var(--cyan);background:rgba(98,211,252,.08)}
+.verdict.bad{border-color:var(--pink);color:#ff7aa8;background:rgba(179,21,84,.14)}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px}
+.chip{padding:2px 9px;border:1px solid var(--line);border-radius:999px;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.chip.p{border-color:var(--pink);color:#ff7aa8;background:rgba(179,21,84,.15)}
+.v h3{margin:4px 0;font:400 15px "Russo One",sans-serif;color:#fff;letter-spacing:.04em}
+.desc{color:var(--cyan);margin:4px 0 0}
+footer{margin-top:22px;text-align:center;color:var(--dim);font-size:10.5px;letter-spacing:.16em}
+</style>
+</head>
+<body>
+<canvas id="grid"></canvas>
+<div class="wrap">
+<header>
+  <div>
+    <h1>FORTEYE</h1>
+    <div class="sub">AI-аудит кассовой дисциплины по видеозаписям</div>
+  </div>
+  <div class="badges">
+    <span class="badge p"><span class="dot"></span>REC</span>
+    <span class="badge" id="mode">Online · API</span>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="ph"><span>// Источник видеосигнала</span><span>CAM-01</span></div>
+    <div class="stage" id="stage">
+      <video id="vid" controls playsinline style="display:none"></video>
+      <div class="nosig" id="nosig"><div><b>NO SIGNAL</b>загрузите видеозапись кассовой зоны</div></div>
+    </div>
+    <div class="tl-bar" id="tl"></div>
+    <div class="row">
+      <label class="btn" for="file">Загрузить видео</label>
+      <input type="file" id="file" accept=".mov,.mp4,video/*">
+      <button class="btn p" id="run" disabled>Запустить анализ</button>
+    </div>
+    <div class="prog"><i id="bar"></i></div>
+    <div id="log"></div>
+  </section>
+
+  <section class="panel">
+    <div class="ph"><span>// Журнал нарушений</span><span id="stat">ОЖИДАНИЕ</span></div>
+    <div class="verdict" id="verdict">ОЖИДАНИЕ ВИДЕО</div>
+    <div class="stats">
+      <div class="stat"><small>Нарушений</small><b id="cnt">0</b></div>
+      <div class="stat"><small>Вердикт</small><b id="risk">—</b></div>
+      <div class="stat"><small>Длительность</small><b id="dur">—</b></div>
+    </div>
+    <div id="list"><div class="empty">НАРУШЕНИЙ НЕ ОБНАРУЖЕНО<br>запустите анализ</div></div>
+  </section>
+</main>
+<footer>FORTEYE v1.0 · ОБРАБОТКА ЛОКАЛЬНО</footer>
+</div>
+
+<script>
+const CONFIG = {
+  API_URL: window.location.origin + "/api/v1",
+  API_KEY: "forteye-secret"
+};
+
+const $=s=>document.querySelector(s), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const fmt=s=>{s=Math.max(0,s||0);const m=Math.floor(s/60),x=s-m*60;return String(m).padStart(2,"0")+":"+x.toFixed(1).padStart(4,"0")};
+
+const vid=$("#vid"), nosig=$("#nosig");
+let file=null, url=null, dur=0;
+
+$("#file").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  file=f; if(url) URL.revokeObjectURL(url); url=URL.createObjectURL(f);
+  vid.src=url; vid.style.display="block"; nosig.style.display="none";
+  $("#run").disabled=false;
+};
+
+vid.onloadedmetadata=()=>{ dur=vid.duration; $("#dur").textContent=fmt(dur); };
+
+function log(msg){ const d=document.createElement("div"); d.textContent="> "+msg; $("#log").appendChild(d); }
+const bar=p=>$("#bar").style.width=p+"%";
+
+async function callApi(){
+  const H={"X-API-Key":CONFIG.API_KEY}, B=CONFIG.API_URL;
+  const fd=new FormData(); fd.append("file",file);
+  let r=await fetch(B+"/analyze",{method:"POST",headers:H,body:fd});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const id=(await r.json()).job_id, t0=Date.now();
+  
+  while(Date.now()-t0<300000){
+    await sleep(2000);
+    r=await fetch(B+"/jobs/"+id,{headers:H});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const j=await r.json();
+    if(j.status==="failed") throw new Error("Обработка завершилась ошибкой: "+(j.error||""));
+    if(j.status==="done") return j.violations||[];
+    log("СТАТУС: "+j.status);
+  }
+  throw new Error("Превышено время ожидания");
+}
+
+function renderResults(list){
+  const L=$("#list"); L.innerHTML=""; $("#tl").innerHTML="";
+  $("#cnt").textContent=list.length;
+  
+  if(!list.length){
+    L.innerHTML='<div class="empty">НАРУШЕНИЙ НЕ ОБНАРУЖЕНО</div>';
+    $("#verdict").className="verdict ok"; $("#verdict").textContent="НАРУШЕНИЙ НЕ ОБНАРУЖЕНО";
+    $("#risk").textContent="ЧИСТО"; $("#risk").className="";
+    return;
+  }
+  
+  $("#verdict").className="verdict bad"; $("#verdict").textContent="ОБНАРУЖЕНЫ ПРИЗНАКИ ВОЗМОЖНЫХ НАРУШЕНИЙ";
+  $("#risk").textContent="ВЫСОКИЙ"; $("#risk").className="r";
+  
+  const d=dur||1;
+  list.forEach(v=>{
+    const m=document.createElement("div"); m.className="mk";
+    m.style.left=(v.timecode_sec/d*100)+"%"; m.onclick=()=>{ vid.currentTime=v.timecode_sec; };
+    $("#tl").appendChild(m);
+    
+    const el=document.createElement("article"); el.className="v";
+    let shotsHTML="";
+    if(v.evidence_frames&&v.evidence_frames.length){
+      shotsHTML='<div class="shots">'+v.evidence_frames.map(f=>
+        `<div class="shot"><img src="data:image/jpeg;base64,${f.image_base64}"></div>`
+      ).join("")+'</div>';
+    }
+    
+    el.innerHTML=`${shotsHTML}
+      <div class="meta"><span class="chip p">⏱ ${fmt(v.timecode_sec)}</span></div>
+      <h3>${v.type}</h3>
+      <p class="desc">${v.description}</p>`;
+    el.onclick=()=>{ vid.currentTime=v.timecode_sec; };
+    L.appendChild(el);
+  });
+}
+
+$("#run").onclick=async()=>{
+  if(!file) return;
+  $("#run").disabled=true; bar(0); $("#log").innerHTML="";
+  log("ОТПРАВКА ВИДЕО НА СЕРВЕР...");
+  try{
+    bar(30);
+    const violations=await callApi();
+    bar(100);
+    log("АНАЛИЗ ЗАВЕРШЕН. Нарушений: "+violations.length);
+    renderResults(violations);
+  } catch(e){
+    log("ОШИБКА: "+e.message);
+    $("#verdict").className="verdict bad"; $("#verdict").textContent="ОШИБКА ОБРАБОТКИ";
+  }
+  $("#run").disabled=false;
+};
+</script>
+</body>
+</html>
